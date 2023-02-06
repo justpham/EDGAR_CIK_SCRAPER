@@ -19,6 +19,7 @@ time.sleep(2)  # Allows elements to load
 
 # Input Search Into the Company Lookup
 company_name = str(input("Input the Name of the Company you wish to search for: "))
+company_name.lower()
 search = driver.find_element(By.NAME, "company")
 search.clear()
 search.send_keys(company_name)
@@ -37,4 +38,15 @@ text = driver.find_element(By.XPATH, "/html/body/table/tbody/tr/td[2]/p[1]")
 results = int(text.text[16])
 print(results)
 
+for i in range(results):
+    temp = driver.find_element(By.XPATH, "/html/body/table/tbody/tr/td[2]/pre[2]/a[" + str((i+1)) + "]")
+    print (results)
+
 driver.close()
+
+#
+# /html/body/table/tbody/tr/td[2]/pre[2]/text()[1]
+# /html/body/table/tbody/tr/td[2]/pre[2]/a[2]
+# /html/body/table/tbody/tr/td[2]/pre[2]/text()[2]
+
+
