@@ -50,6 +50,7 @@ def find_match():
 
     return table[match][0]
 
+
 # Access the Edgar CIK Lookup Webpage
 driver = webdriver.Chrome()
 driver.get("https://www.sec.gov/edgar/searchedgar/cik")
@@ -67,17 +68,17 @@ assert "EDGAR CIK Lookup" == driver.title
 # Finds the number of results
 text = driver.find_element(By.XPATH, "/html/body/table/tbody/tr/td[2]/p[1]")
 results = int(text.text[16])
-cik_num = "N/A"
+cik_num = "N/A"  # output value to csv
 
 # If there are results to parse through
 if results > 0:
     cik_num = str(find_match())
 
 print(cik_num)
+time.sleep(1)
+
+# Goes back to the Search Page
+submit = driver.find_element(By.XPATH, "/html/body/table/tbody/tr/td[2]/a")
+submit.click()
 
 driver.close()
-
-# /html/body/table/tbody/tr/td[2]/pre[2]/text()[3] " + str((i+1)) + "
-# /html/body/table/tbody/tr/td[2]/pre[2]/text()[1]
-# /html/body/table/tbody/tr/td[2]/pre[2]/a[2]
-# /html/body/table/tbody/tr/td[2]/pre[2]/text()[2]
