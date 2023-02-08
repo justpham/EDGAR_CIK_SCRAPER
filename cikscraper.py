@@ -47,13 +47,13 @@ def reformat_name(name):
     reform_name = reform_name.rstrip(" .s")
     return reform_name
 
-def search_company(name, wait):
+def search_company(name, wat):
     """
     Inputs the company name into the search and searchs for it
     Takes the company name as a parameter
     """
     # Explicit wait for the submit button to be clicked
-    wait.until(ec.element_to_be_clickable((By.XPATH, "//*[@id='block-secgov-content']/article/div[1]/div[2]/div[2]/div/div[1]/form/p[1]/input[2]")))
+    wat.until(ec.element_to_be_clickable((By.XPATH, "//*[@id='block-secgov-content']/article/div[1]/div[2]/div[2]/div/div[1]/form/p[1]/input[2]")))
 
     # Inputs search name into search bar
     search = driver.find_element(By.NAME, "company")
@@ -110,6 +110,7 @@ wait = WebDriverWait(driver, timeout=10)
 for x in range(2, 1165):
     print(x)
     driver.get("https://www.sec.gov/edgar/searchedgar/cik")
+    assert "SEC.gov" in driver.title
 
     # If there is a pop-up on the EDGAR website
     if check_exists_by_xpath("//*[@id='fsrFocusFirst']"):
