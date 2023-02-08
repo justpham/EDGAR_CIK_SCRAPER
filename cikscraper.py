@@ -7,11 +7,11 @@ Description: Allows the user to find the number of results pop up in the SEC EDG
 # imports
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.expected_conditions import title_is
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
-import time
 from fuzzywuzzy import fuzz
 from selenium.common.exceptions import NoSuchElementException
+import openpyxl
 
 def check_exists_by_xpath(xpath):
     """
@@ -27,28 +27,35 @@ def reformat_name(name):
     """
     Removes undesired phrases in a string; also replaces . with a space
     """
-    undesired = ["inc.", "inc", "llc", "llc.", "l.l.c.", "(tiso)", "corp", "corp.", "ltd", "ltd.", "and other issuers", "et al.", "tiso"]
+    undesired = ["inc.", "limited", "inc", "llc", "llc.", "l.l.c.", "(tiso)", "corp", "corp.", "ltd", "ltd.", "and other issuers", "et al.", "tiso", "l.p.", "lp", "company", "corp", "corporation"]
 
+    # Make all characters lower case and split them into different lists
     temp = name.lower()
     temp = temp.strip(" ")
     temp = temp.split(" ")
-    reform_name = ""
+    reform_name = ""  # Return value
 
+    # Remove any undesired phrases in the list
     for i in range(len(temp)):
         if temp[i] not in undesired:
             reform_name += temp[i]
             reform_name += " "
 
+    # Change characters to be more readable to the search
     reform_name = reform_name.replace(",", "")
-    reform_name = reform_name.replace(".", " ")
-    reform_name = reform_name.strip(" ")
+    reform_name = reform_name.replace(".COM", " COM")
+    reform_name = reform_name.rstrip(" .s")
     return reform_name
 
-def search_company(name):
+def search_company(name, wait):
     """
     Inputs the company name into the search and searchs for it
     Takes the company name as a parameter
     """
+    # Explicit wait for the submit button to be clicked
+    wait.until(ec.element_to_be_clickable((By.XPATH, "//*[@id='block-secgov-content']/article/div[1]/div[2]/div[2]/div/div[1]/form/p[1]/input[2]")))
+
+    # Inputs search name into search bar
     search = driver.find_element(By.NAME, "company")
     search.clear()
     search.send_keys(name)
@@ -63,6 +70,7 @@ def find_match(name):
     Assumes that the search will always match the result with the least amount characters
     Returns an int of where the result is located in the HTML code
     """
+    # Stores the results into a list
     string_results = driver.find_element(By.XPATH, "/html/body/table/tbody/tr/td[2]/pre[2]").text
     table = string_results.splitlines()
     match = -1
@@ -72,18 +80,17 @@ def find_match(name):
     for i in range(len(table)):
         table[i] = table[i].strip(" ")
         table[i] = table[i].split("   ")
-        table[i][1] = reformat_name([i][1])
+        table[i][1] = reformat_name(table[i][1])  # Reformat the naming to account for any shifts in adjustments
 
-    # Need to add functionality to truncate LLC, LTD, etc. from end of the results
-
+    # Compares the results to the name and compares it to the best result, storing only the best result
     for i in range(len(table)):
-        if fuzz.ratio(name, table[i][1]) > current:
+        if fuzz.ratio(name, table[i][1]) > current and fuzz.ratio(name, table[i][1]) > 70:
             current = fuzz.ratio(name, table[i][1])
             match = i
 
-    if match == -1:
+    if match == -1:  # If the match is not found
         return "N/A"
-    else:
+    else:  # If the match is found return the cik number
         return table[match][0]
 
 def click_button(xpath):
@@ -96,35 +103,43 @@ def click_button(xpath):
 
 # Access the Edgar CIK Lookup Webpage
 driver = webdriver.Chrome()
-driver.get("https://www.sec.gov/edgar/searchedgar/cik")
-assert "SEC.gov" in driver.title
-time.sleep(2)  # Allows elements to load
+file = openpyxl.load_workbook("InvestigationsJul20toSep21.xlsx")
+sheet = file['Sheet1']
+wait = WebDriverWait(driver, timeout=10)
 
-# Input Search Into the Company Lookup
-company_name = reformat_name(str(input("Input the Name of the Company you wish to search for: ")))
-search_company(company_name)
+for x in range(2, 1165):
+    print(x)
+    driver.get("https://www.sec.gov/edgar/searchedgar/cik")
 
-# Checks if the Website has loaded
-WebDriverWait(driver, timeout=10).until(title_is("EDGAR CIK Lookup"))
-assert "EDGAR CIK Lookup" == driver.title
+    # If there is a pop-up on the EDGAR website
+    if check_exists_by_xpath("//*[@id='fsrFocusFirst']"):
+        click_button("//*[@id='fsrFocusFirst']")
 
-# If there is a pop-up on the EDGAR website
-if check_exists_by_xpath("//*[@id='fsrFocusFirst']"):
-    click_button("//*[@id='fsrFocusFirst']")
+    # Input Search Into the Company Lookup
+    company_name = reformat_name(str(sheet["A"+str(x)+""].value))
+    # reformat_name(str(input("Input the Name of the Company you wish to search for: ")))
+    search_company(company_name, wait)
 
-# Finds the number of results
-text = driver.find_element(By.XPATH, "/html/body/table/tbody/tr/td[2]/p[1]")
-results = int(text.text[16])
-cik_num = "N/A"  # output value to csv
+    # Checks if the Website has loaded
+    wait.until(ec.title_is("EDGAR CIK Lookup"))
+    assert "EDGAR CIK Lookup" == driver.title
 
-# If there are results to parse through
-if results > 0:
-    cik_num = str(find_match(company_name))
+    # If there is a pop-up on the EDGAR website
+    if check_exists_by_xpath("//*[@id='fsrFocusFirst']"):
+        click_button("//*[@id='fsrFocusFirst']")
 
-print(cik_num)
-time.sleep(1)
+    # Finds the number of results
+    text = driver.find_element(By.XPATH, "/html/body/table/tbody/tr/td[2]/p[1]")
+    text = ''.join(filter(str.isdigit, text.text))
+    results = int(text)
 
-# Goes back to the Search Page
-click_button("/html/body/table/tbody/tr/td[2]/a")
+    cik_num = "N/A"  # output value to .xlsx
 
+    # If there are results to parse through
+    if results > 0:
+        cik_num = str(find_match(company_name))
+
+    sheet["E"+str(x)+""].value = cik_num
+
+file.save('CIKsForInvestigationsJul10toSep21')
 driver.close()
