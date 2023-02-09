@@ -1,7 +1,8 @@
 """
 Author: Justin Pham
 Date: 2/4/2023
-Description: Allows the user to find the number of results pop up in the SEC EDGAR CIK Lookup Database
+Description: Allows the user to scrape the EDGAR website to
+             find results using inputted data from a spreadsheet
 """
 
 # imports
