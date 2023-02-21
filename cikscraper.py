@@ -55,6 +55,7 @@ def search_company(name, wat):
     """
     # Explicit wait for the submit button to be clicked
     wat.until(ec.element_to_be_clickable((By.XPATH, "//*[@id='block-secgov-content']/article/div[1]/div[2]/div[2]/div/div[1]/form/p[1]/input[2]")))
+    wat.until(ec.presence_of_element_located((By.NAME, "company")))
 
     # Inputs search name into search bar
     search = driver.find_element(By.NAME, "company")
@@ -65,7 +66,7 @@ def search_company(name, wat):
     click_button("//*[@id='block-secgov-content']/article/div[1]/div[2]/div[2]/div/div[1]/form/p[1]/input[2]")
     return
 
-def find_match(name):
+def find_match(name, num):
     """
     Finds the matching CIK number to the company name
     Assumes that the search will always match the result with the least amount characters
@@ -92,6 +93,7 @@ def find_match(name):
     if match == -1:  # If the match is not found
         return "N/A"
     else:  # If the match is found return the cik number
+        sheet['F' + str(num)].value = table[match][1]
         return table[match][0]
 
 def click_button(xpath):
@@ -107,6 +109,7 @@ driver = webdriver.Chrome()
 file = openpyxl.load_workbook("InvestigationsJul20toSep21.xlsx")
 sheet = file['Sheet1']
 wait = WebDriverWait(driver, timeout=10)
+sheet['F1'].value = "Chosen Company Name"
 
 for x in range(2, 1165):
     print(x)
@@ -139,9 +142,9 @@ for x in range(2, 1165):
 
     # If there are results to parse through
     if results > 0:
-        cik_num = str(find_match(company_name))
+        cik_num = str(find_match(company_name, x))
 
     sheet["E"+str(x)+""].value = cik_num
 
-file.save('CIKsForInvestigationsJul10toSep21')
+file.save('CIKsForInvestigationsJul10toSep21.xlsx')
 driver.close()
