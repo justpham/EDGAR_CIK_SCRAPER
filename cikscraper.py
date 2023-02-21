@@ -44,7 +44,7 @@ def reformat_name(name):
 
     # Change characters to be more readable to the search
     reform_name = reform_name.replace(",", "")
-    reform_name = reform_name.replace(".COM", " COM")
+    reform_name = reform_name.replace(".com", " com")
     reform_name = reform_name.rstrip(" .s")
     return reform_name
 
